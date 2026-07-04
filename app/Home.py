@@ -104,7 +104,7 @@ st.markdown(
     - ABS Census 2021 household indicators
     - Prepared BOM climate indicators
     - Prepared Geoscience Australia, data.gov.au or state open-data hazard indicators
-    - Synthetic insurance estimates generated from documented assumptions
+    - Modelled insurance affordability indicators generated from documented scoring logic
     """
 )
 

@@ -84,6 +84,51 @@ def configure_page(title: str) -> None:
             margin-top: 0;
             margin-bottom: 0.35rem;
         }
+        .cc-card strong {
+            color: var(--cc-navy);
+        }
+        .cc-insight {
+            border: 1px solid #c7d7e8;
+            border-radius: 8px;
+            padding: 1rem 1.15rem;
+            background: linear-gradient(180deg, #ffffff 0%, #f4f8fc 100%);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.08);
+        }
+        .cc-insight h4 {
+            color: var(--cc-navy);
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+        .cc-insight ul {
+            margin-bottom: 0;
+        }
+        .cc-status-strip {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin: 0.75rem 0 1.25rem 0;
+        }
+        .cc-status-item {
+            border: 1px solid var(--cc-line);
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 0.7rem 0.85rem;
+            min-width: 185px;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
+        }
+        .cc-status-item span {
+            display: block;
+            color: var(--cc-muted);
+            font-size: 0.78rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .cc-status-item strong {
+            display: block;
+            color: var(--cc-navy);
+            font-size: 0.98rem;
+            margin-top: 0.2rem;
+        }
         .cc-summary {
             border-left: 4px solid var(--cc-blue);
             background: #edf5fc;
@@ -121,6 +166,18 @@ def configure_page(title: str) -> None:
             border: 1px solid var(--cc-line);
             border-radius: 8px;
             overflow: hidden;
+        }
+        [data-testid="stExpander"] {
+            background: #ffffff;
+            border: 1px solid var(--cc-line);
+            border-radius: 8px;
+        }
+        [data-testid="stPlotlyChart"] {
+            border: 1px solid var(--cc-line);
+            border-radius: 8px;
+            background: #ffffff;
+            padding: 0.35rem;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
         }
         </style>
         """,

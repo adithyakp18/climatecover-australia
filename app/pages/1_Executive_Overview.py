@@ -21,8 +21,10 @@ from src.dashboard.formatting import (
     format_number,
     format_percent,
 )
+from src.dashboard.insights import build_national_briefing
 from src.dashboard.queries import (
     ensure_dashboard_data,
+    load_data_manifest,
     load_band_distribution,
     load_kpis,
     load_top_regions,
@@ -43,12 +45,42 @@ if not data_ready:
     st.stop()
 
 kpis = load_kpis()
+risk_distribution = load_band_distribution("risk_band")
+affordability_distribution = load_band_distribution("affordability_band")
+top_risk = load_top_regions("property_risk_score", 10)
+top_stress = load_top_regions("premium_to_income_percent", 10)
+priority = load_top_regions("intervention_priority_score", 5)
+manifest = load_data_manifest()
+
+briefing_items = build_national_briefing(kpis, top_risk, top_stress, priority, manifest)
+briefing_html = "".join(f"<li>{item}</li>" for item in briefing_items)
+
+st.markdown(
+    f"""
+    <div class="cc-insight">
+      <h4>Generated Executive Briefing</h4>
+      <ul>{briefing_html}</ul>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    f"""
+    <div class="cc-status-strip">
+      <div class="cc-status-item"><span>Refresh model</span><strong>Monthly automated rebuild</strong></div>
+      <div class="cc-status-item"><span>Regional coverage</span><strong>{int(kpis['total_regions']):,} SA2 regions</strong></div>
+      <div class="cc-status-item"><span>Decision layer</span><strong>Regional risk intelligence</strong></div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 metric_cols = st.columns(5)
 metric_cols[0].metric("Total Regions", f"{int(kpis['total_regions']):,}")
 metric_cols[1].metric("High Risk Regions", f"{int(kpis['high_risk_regions']):,}")
 metric_cols[2].metric(
-    "Severe Affordability",
+    "Severe Affordability Regions",
     f"{int(kpis['severe_affordability_regions']):,}",
 )
 metric_cols[3].metric(
@@ -64,23 +96,33 @@ st.divider()
 
 chart_col1, chart_col2 = st.columns(2)
 with chart_col1:
-    st.plotly_chart(risk_donut(load_band_distribution("risk_band")), use_container_width=True)
+    st.plotly_chart(
+        risk_donut(risk_distribution),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
 with chart_col2:
     st.plotly_chart(
-        affordability_donut(load_band_distribution("affordability_band")),
+        affordability_donut(affordability_distribution),
         use_container_width=True,
+        config={"displayModeBar": False},
     )
 
 bar_col1, bar_col2 = st.columns(2)
 with bar_col1:
-    top_risk = load_top_regions("property_risk_score", 10)
-    st.plotly_chart(top_risk_bar(top_risk), use_container_width=True)
+    st.plotly_chart(
+        top_risk_bar(top_risk),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
 with bar_col2:
-    top_stress = load_top_regions("premium_to_income_percent", 10)
-    st.plotly_chart(top_affordability_bar(top_stress), use_container_width=True)
+    st.plotly_chart(
+        top_affordability_bar(top_stress),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
 
 st.subheader("Executive Signal")
-priority = load_top_regions("intervention_priority_score", 5)
 priority_table = priority[
     [
         "sa2_name",

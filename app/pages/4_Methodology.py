@@ -17,30 +17,41 @@ configure_page("Methodology")
 st.title("Methodology")
 st.caption("How ClimateCover Australia prepares data, calculates risk and supports regional decision-making.")
 
-with st.expander("Real Datasets", expanded=True):
+with st.expander("Public Data Foundation", expanded=True):
     st.markdown(
         """
-        - ABS ASGS SA2 region reference data
-        - ABS SEIFA 2021
-        - ABS Census 2021 household indicators
-        - Prepared BOM climate indicators
-        - Prepared Geoscience Australia, data.gov.au or state government hazard indicators
+        ClimateCover uses Australian public data as the foundation for regional decision intelligence.
+
+        - ABS ASGS regional reference data for Australian statistical geography.
+        - ABS SEIFA 2021 for socio-economic advantage, disadvantage and vulnerability signals.
+        - ABS Census household indicators for income, housing and household scale.
+        - Prepared climate indicators aligned to Bureau of Meteorology style measures.
+        - Prepared hazard indicators aligned to Geoscience Australia, data.gov.au and state open-data sources.
+
+        The application rebuilds its DuckDB analytical layer from these inputs so dashboards,
+        rankings and regional profiles refresh from the governed data layer.
         """
     )
 
-with st.expander("Insurance Premium Estimation"):
+with st.expander("Insurance Affordability Model", expanded=True):
     st.markdown(
         """
-        Annual insurance premium estimates are generated because complete SA2-level
-        Australian home insurance premium data is not publicly released at the level
-        required for this application.
+        ClimateCover estimates household insurance affordability pressure by combining
+        regional hazard exposure, socio-economic vulnerability and housing cost pressure.
 
-        The estimates are reproducible, explainable and based on:
+        The annual premium estimate is a transparent modelled indicator. It is designed
+        for portfolio screening, policy discussion and resilience prioritisation.
 
-        - State-level synthetic base premium assumptions
-        - Flood, bushfire, cyclone and storm hazard scores
-        - Rebuild-cost pressure derived from income and mortgage repayment ranks
-        - Zero mitigation discount until the scenario simulator sprint
+        It considers:
+
+        - A regional baseline insurance cost.
+        - Flood, bushfire, cyclone and storm exposure.
+        - Rebuild-cost pressure informed by household and housing indicators.
+        - Future mitigation adjustments once resilience scenarios are added.
+
+        Public region-level insurer quote and claims datasets are not openly available
+        at national SA2 coverage. For that reason, this application presents an explainable
+        affordability estimate rather than an insurer quote or actuarial price.
         """
     )
 
@@ -87,24 +98,34 @@ with st.expander("Affordability Methodology", expanded=True):
         """
     )
 
-with st.expander("Assumptions"):
+with st.expander("Data Preparation Workflow"):
     st.markdown(
         """
-        - SA2 is the primary analytical grain.
-        - Climate and hazard inputs are assumed to be prepared at SA2 level before ingestion.
-        - Synthetic premiums are scenario estimates, not insurer quotes.
-        - Mitigation discount is currently zero.
-        - The combined hazard indicator is used as the historical hazard signal until a dedicated disaster event table is added.
+        1. Public regional files are loaded into `data/raw`.
+        2. Python ingestion scripts standardise field names, types and regional keys.
+        3. Processed files are written to `data/processed`.
+        4. DuckDB tables are rebuilt for regions, demographics, SEIFA, climate, hazards,
+           affordability and property risk.
+        5. The dashboard reads directly from the analytical DuckDB layer.
+        6. A scheduled GitHub Actions workflow can rebuild the data layer monthly and redeploy the app.
         """
     )
 
-with st.expander("Limitations"):
+with st.expander("Model Governance"):
     st.markdown(
         """
-        - Synthetic premiums must not be used for underwriting, pricing, financial advice or household decisions.
+        ClimateCover is a decision-support analytics platform. It is intended to help
+        executives, analysts and policy teams identify where deeper investigation,
+        resilience investment or community support may be required.
+
+        Important governance notes:
+
+        - Premium estimates are not insurer quotes and must not be used for underwriting,
+          pricing, financial advice or household purchase decisions.
         - Public hazard datasets vary by state, licence, update frequency and spatial precision.
         - Census income fields are from 2021 and may not reflect current household income.
-        - SA2-level aggregation can hide local street-level hazard variation.
-        - This is a decision-support analytics application, not an actuarial pricing model.
+        - Regional results can hide local street-level hazard variation.
+        - The platform should be connected to live insurer, claims and parcel-level hazard
+          data before operational pricing or portfolio action.
         """
     )

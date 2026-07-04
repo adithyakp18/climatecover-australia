@@ -17,13 +17,14 @@ from src.dashboard.formatting import (
     format_number,
     format_percent,
 )
+from src.dashboard.insights import build_region_briefing
 from src.dashboard.queries import ensure_dashboard_data, load_foundation_risk, load_region_names
 
 
 configure_page("Region Profile")
 
 st.title("Region Profile")
-st.caption("Detailed SA2-level view for executive discussion and intervention planning.")
+st.caption("Detailed regional view for executive discussion and intervention planning.")
 
 with st.spinner("Preparing regional risk database..."):
     data_ready, data_message = ensure_dashboard_data()
@@ -41,7 +42,7 @@ labels = (
     + " | "
     + regions["sa2_code"].astype(str)
 )
-selected_label = st.selectbox("Select SA2", labels)
+selected_label = st.selectbox("Select region", labels)
 selected_code = selected_label.split("|")[-1].strip()
 
 df = load_foundation_risk()
@@ -49,14 +50,17 @@ region = df[df["sa2_code"].astype(str) == selected_code].iloc[0]
 
 st.subheader(f"{region['sa2_name']}, {region['state_name']}")
 
-summary = (
-    f"{region['sa2_name']} is classified as **{region['risk_band']}** property risk "
-    f"with an estimated annual premium of **{format_currency(region['estimated_annual_premium'])}**. "
-    f"The premium-to-income burden is **{format_percent(region['premium_to_income_percent'])}**, "
-    f"placing the region in the **{region['affordability_band']}** affordability band. "
-    f"The intervention priority score is **{format_number(region['intervention_priority_score'], 1)}**."
+briefing_items = build_region_briefing(region)
+briefing_html = "".join(f"<li>{item}</li>" for item in briefing_items)
+st.markdown(
+    f"""
+    <div class="cc-insight">
+      <h4>Generated Regional Briefing</h4>
+      <ul>{briefing_html}</ul>
+    </div>
+    """,
+    unsafe_allow_html=True,
 )
-st.markdown(f"<div class='cc-summary'>{summary}</div>", unsafe_allow_html=True)
 
 st.divider()
 
@@ -98,6 +102,14 @@ with hazard_col:
 
 chart_col1, chart_col2 = st.columns(2)
 with chart_col1:
-    st.plotly_chart(region_component_bar(region), use_container_width=True)
+    st.plotly_chart(
+        region_component_bar(region),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )
 with chart_col2:
-    st.plotly_chart(premium_loading_bar(region), use_container_width=True)
+    st.plotly_chart(
+        premium_loading_bar(region),
+        use_container_width=True,
+        config={"displayModeBar": False},
+    )

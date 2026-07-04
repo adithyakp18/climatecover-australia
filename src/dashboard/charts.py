@@ -8,24 +8,53 @@ from src.dashboard.formatting import AFFORDABILITY_COLORS, RISK_COLORS, band_ord
 
 
 def donut_chart(df: pd.DataFrame, title: str, color_map: dict[str, str]) -> go.Figure:
-    ordered = df.copy()
-    ordered["band"] = pd.Categorical(ordered["band"], categories=band_order(), ordered=True)
-    ordered = ordered.sort_values("band")
-    fig = px.pie(
-        ordered,
-        names="band",
-        values="region_count",
-        hole=0.58,
-        color="band",
-        color_discrete_map=color_map,
+    order = band_order()
+    ordered = (
+        df.set_index("band")
+        .reindex(order, fill_value=0)
+        .reset_index()
+        .rename(columns={"index": "band"})
+    )
+    ordered["region_count"] = ordered["region_count"].fillna(0).astype(int)
+    total = int(ordered["region_count"].sum())
+
+    fig = go.Figure(
+        data=[
+            go.Pie(
+                labels=ordered["band"],
+                values=ordered["region_count"],
+                hole=0.62,
+                sort=False,
+                marker=dict(
+                    colors=[color_map.get(band, "#718096") for band in ordered["band"]],
+                    line=dict(color="#ffffff", width=2),
+                ),
+                texttemplate="%{label}<br>%{percent}",
+                textposition="inside",
+                hovertemplate="<b>%{label}</b><br>%{value:,} regions<br>%{percent}<extra></extra>",
+            )
+        ]
     )
     fig.update_layout(
         title=title,
-        margin=dict(l=10, r=10, t=48, b=10),
+        template="plotly_white",
+        margin=dict(l=12, r=12, t=58, b=18),
         legend_title_text="Band",
-        height=360,
+        height=410,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#172033", size=13),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.08, xanchor="center", x=0.5),
+        annotations=[
+            dict(
+                text=f"{total:,}<br>regions",
+                x=0.5,
+                y=0.5,
+                font=dict(size=18, color="#10243f"),
+                showarrow=False,
+            )
+        ],
     )
-    fig.update_traces(textposition="inside", textinfo="percent+label")
     return fig
 
 
@@ -57,13 +86,25 @@ def horizontal_bar(
     )
     fig.update_layout(
         title=title,
-        margin=dict(l=10, r=10, t=48, b=10),
-        height=420,
+        template="plotly_white",
+        margin=dict(l=10, r=22, t=58, b=20),
+        height=450,
         yaxis_title="",
         xaxis_title=label,
         showlegend=False,
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#ffffff",
+        font=dict(color="#172033", size=12),
     )
-    fig.update_traces(texttemplate="%{text:.1f}", textposition="outside", cliponaxis=False)
+    fig.update_xaxes(showgrid=True, gridcolor="#e6edf5")
+    fig.update_yaxes(showgrid=False, automargin=True)
+    fig.update_traces(
+        texttemplate="%{text:.1f}",
+        textposition="outside",
+        cliponaxis=False,
+        marker_line_color="#ffffff",
+        marker_line_width=1,
+    )
     return fig
 
 
@@ -127,11 +168,16 @@ def region_component_bar(region: pd.Series) -> go.Figure:
     )
     fig.update_layout(
         title="Property Risk Score Components",
-        margin=dict(l=10, r=10, t=48, b=10),
-        height=360,
+        template="plotly_white",
+        margin=dict(l=10, r=10, t=58, b=18),
+        height=380,
         showlegend=False,
         yaxis_title="Weighted contribution",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#ffffff",
+        font=dict(color="#172033", size=12),
     )
+    fig.update_yaxes(showgrid=True, gridcolor="#e6edf5")
     return fig
 
 
@@ -176,9 +222,14 @@ def premium_loading_bar(region: pd.Series) -> go.Figure:
     )
     fig.update_layout(
         title="Estimated Premium Components",
-        margin=dict(l=10, r=10, t=48, b=10),
-        height=360,
+        template="plotly_white",
+        margin=dict(l=10, r=10, t=58, b=18),
+        height=380,
         showlegend=False,
         yaxis_title="Estimated annual amount ($)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="#ffffff",
+        font=dict(color="#172033", size=12),
     )
+    fig.update_yaxes(showgrid=True, gridcolor="#e6edf5")
     return fig

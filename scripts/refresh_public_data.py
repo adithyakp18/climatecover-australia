@@ -29,7 +29,6 @@ MANIFEST_PATH = PROJECT_ROOT / "docs" / "data_refresh_manifest.json"
 def database_summary() -> dict[str, object]:
     conn = duckdb.connect(str(DB_PATH), read_only=True)
     try:
-        tables = [row[0] for row in conn.execute("SHOW TABLES").fetchall()]
         risk_summary = conn.execute(
             """
             SELECT
@@ -47,7 +46,14 @@ def database_summary() -> dict[str, object]:
         conn.close()
 
     return {
-        "tables": tables,
+        "analytics_layers": [
+            "Regional reference",
+            "Socio-economic indicators",
+            "Household affordability indicators",
+            "Climate and hazard indicators",
+            "Insurance affordability estimates",
+            "Property risk and intervention priority",
+        ],
         "total_regions": int(risk_summary[0] or 0),
         "avg_property_risk_score": float(risk_summary[1] or 0),
         "avg_premium_to_income_percent": float(risk_summary[2] or 0),

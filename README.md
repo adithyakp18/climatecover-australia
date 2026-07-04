@@ -4,27 +4,27 @@ Insurance Affordability & Property Risk Intelligence Platform
 
 ClimateCover Australia is an insurance affordability and property risk intelligence platform. It combines Australian public data and explainable analytics to identify communities where climate-related property risk intersects with household affordability pressure.
 
-Sprint 1 builds the real-data foundation at SA2 level:
+## What It Does
 
-- `dim_region`
-- `fact_seifa`
-- `fact_demographics`
-- `foundation_region_profile`
+ClimateCover helps insurers, banks, governments and resilience teams answer:
 
-Sprint 2 adds the climate and hazard layer:
+- Which Australian regions combine high property risk with affordability pressure?
+- Where should resilience investment, mitigation funding or community support be prioritised?
+- Which regional markets require deeper underwriting, lending or policy analysis?
+- How can executives explain climate-related insurance pressure using a transparent data model?
 
-- `fact_climate`
-- `fact_hazard`
-- `foundation_region_climate`
+## Current Data Foundation
 
-Sprint 3 adds insurance affordability and property risk analytics:
+The deployed dataset is built from an ABS-backed national regional foundation:
 
-- `synthetic_insurance`
-- `fact_affordability`
-- `fact_property_risk`
-- `foundation_region_risk`
+- Official ABS SEIFA 2021 SA2 records
+- Real SA2 codes, names, states and regional population
+- Real ABS IRSD and IER scores and deciles
+- Modelled household, climate, hazard and insurance affordability indicators used to create a national decision-support layer
 
-The project uses Python, Pandas and DuckDB. No Databricks dependency is required.
+The insurance affordability layer is an explainable estimate for regional screening. It is not an insurer quote, actuarial price or financial advice.
+
+The project uses Python, Pandas, DuckDB, Streamlit and Plotly. No Databricks dependency is required.
 
 ## Automated Data Refresh
 
@@ -52,21 +52,16 @@ Monthly, on the first day of the month
 
 The workflow refreshes public source files, rebuilds the analytics database for validation, writes `docs/data_refresh_manifest.json`, and commits refreshed source/manifest files back to GitHub when changes exist.
 
-## Sprint 1 Data Status
+## Data Status
 
-Sprint 1 expects user-downloaded ABS files in `data/raw/`.
+The repository includes a national ABS-backed seed dataset so the Streamlit app can run locally and in Streamlit Community Cloud without manual file downloads.
 
 Real public data:
 
-- ABS ASGS SA2 region reference or boundary export
 - ABS SEIFA 2021 SA2 indexes
-- ABS Census 2021 General Community Profile or equivalent SA2 demographic proxy
+- ABS statistical geography fields derived from official SA2 records
 
-Synthetic data:
-
-- None in Sprint 1
-
-Synthetic premium, claims and mitigation scenario data will be introduced in later sprints and clearly labelled.
+Prepared Census, BOM, Geoscience Australia and state hazard extracts can be added to replace or enrich the current modelled indicators.
 
 ## Quick Start
 
@@ -74,31 +69,20 @@ Synthetic premium, claims and mitigation scenario data will be introduced in lat
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-python scripts\run_sprint1.py
-python scripts\run_sprint2.py
-python scripts\run_sprint3.py
+python scripts\create_abs_backed_database.py
 streamlit run app/Home.py
 ```
 
-The runners will fail if the required raw files are not present. That is expected. Place the files listed in `docs/data_sources.md` into `data/raw/`, update the column mappings in the ingestion scripts if needed, then rerun the command.
+The app also prepares the ABS-backed database automatically on startup when the DuckDB database is missing.
 
 ## Expected Output
 
-After a successful Sprint 1 run:
+After a successful build:
 
 - DuckDB database: `db/climatecover.duckdb`
-- Tables:
-  - `dim_region`
-  - `fact_seifa`
-  - `fact_demographics`
-  - `foundation_region_profile`
-  - `fact_climate`
-  - `fact_hazard`
-  - `foundation_region_climate`
-  - `synthetic_insurance`
-  - `fact_affordability`
-  - `fact_property_risk`
-  - `foundation_region_risk`
+- Streamlit dashboard: `app/Home.py`
+- Automated refresh manifest: `docs/data_refresh_manifest.json`
+- Regional risk intelligence layer used by the dashboard
 
 ## Dashboard
 
@@ -114,24 +98,7 @@ The dashboard reads directly from:
 db/climatecover.duckdb
 ```
 
-Primary dashboard table:
-
-```text
-foundation_region_risk
-```
-
-### Local Sample Mode
-
-If you want to preview the dashboard before downloading the real ABS/BOM/hazard files, create a clearly labelled local sample database:
-
-```powershell
-python scripts\create_demo_database.py
-streamlit run app/Home.py
-```
-
-Local sample mode is only for UI testing.
-
-### ABS-Backed Production Seed
+### ABS-Backed Data Build
 
 To create a national SA2 database seeded from the official ABS SEIFA workbook:
 
@@ -141,7 +108,7 @@ python scripts\create_abs_backed_database.py
 streamlit run app/Home.py
 ```
 
-This mode uses official ABS SEIFA SA2 records for region names, population and SEIFA indexes. Add prepared Census, BOM, Geoscience Australia and state hazard extracts to move from production seed data to full production data coverage.
+This mode uses official ABS SEIFA SA2 records for region names, population and SEIFA indexes. Prepared Census, BOM, Geoscience Australia and state hazard extracts can be connected as source-specific production hardening steps.
 
 Pages:
 
@@ -168,4 +135,4 @@ Suggested screenshots:
 - Fail loudly when column mappings are ambiguous.
 - Report join quality and missing SA2 rates.
 - Keep methodology explainable for business stakeholders.
-- Make the local prototype easy to migrate later to a lakehouse architecture.
+- Keep the local analytics layer easy to migrate later to a lakehouse architecture.
