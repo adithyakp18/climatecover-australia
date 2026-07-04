@@ -26,6 +26,32 @@ Sprint 3 adds insurance affordability and property risk analytics:
 
 The project uses Python, Pandas and DuckDB. No Databricks dependency is required.
 
+## Automated Data Refresh
+
+The project includes an automated public-data refresh workflow.
+
+Manual local refresh:
+
+```powershell
+python scripts\refresh_public_data.py
+```
+
+Stop any running local Streamlit app before running the local refresh, because DuckDB allows only one writer at a time.
+
+GitHub Actions workflow:
+
+```text
+.github/workflows/refresh-public-data.yml
+```
+
+Schedule:
+
+```text
+Monthly, on the first day of the month
+```
+
+The workflow refreshes public source files, rebuilds the analytics database for validation, writes `docs/data_refresh_manifest.json`, and commits refreshed source/manifest files back to GitHub when changes exist.
+
 ## Sprint 1 Data Status
 
 Sprint 1 expects user-downloaded ABS files in `data/raw/`.

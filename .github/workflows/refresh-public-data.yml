@@ -1,0 +1,37 @@
+name: Refresh public data
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 1 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-public-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Refresh public datasets and rebuild analytics database
+        run: python scripts/refresh_public_data.py
+
+      - name: Show changed files
+        run: git status --short
+
+      - name: Commit refreshed data outputs
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Refresh public data"
+          file_pattern: "data/raw/*.csv data/raw/*.xlsx docs/data_refresh_manifest.json"

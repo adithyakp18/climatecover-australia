@@ -299,3 +299,34 @@ Why this exists:
 Limitations:
 
 - Full deployment should replace derived fields with prepared Census, BOM, Geoscience Australia and state hazard extracts.
+
+## 8. Automated Refresh Workflow
+
+The repository includes a scheduled GitHub Actions workflow:
+
+```text
+.github/workflows/refresh-public-data.yml
+```
+
+It runs:
+
+```text
+python scripts/refresh_public_data.py
+```
+
+Current automated refresh scope:
+
+- Refresh ABS SEIFA workbook when the public ABS page exposes a matching download.
+- Recreate SA2 region and household seed extracts.
+- Rebuild the DuckDB analytics database for validation.
+- Write `docs/data_refresh_manifest.json`.
+- Commit changed public-data seed files and manifest outputs.
+
+Current non-automated layers:
+
+- Direct ABS Census GCP SA2 ingestion
+- BOM climate API/download ingestion
+- Geoscience Australia/state geospatial hazard joins
+- Real SA2-level insurer premium data
+
+These are structured as future hardening steps because their source formats, licensing, update cadence and spatial joins need source-specific handling.

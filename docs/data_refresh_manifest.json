@@ -1,0 +1,53 @@
+{
+  "last_refresh_utc": "2026-07-04T15:38:11.576429+00:00",
+  "refresh_mode": "automated_public_data_refresh",
+  "status": "success",
+  "primary_table": "foundation_region_risk",
+  "real_public_sources": [
+    {
+      "name": "ABS SEIFA 2021 SA2 workbook",
+      "provider": "Australian Bureau of Statistics",
+      "coverage": "National SA2",
+      "fields_used": [
+        "SA2 code",
+        "SA2 name",
+        "usual resident population",
+        "IRSD score and decile",
+        "IER score and decile"
+      ],
+      "update_pattern": "ABS release cycle"
+    }
+  ],
+  "derived_or_modelled_layers": [
+    "Household income/rent/mortgage indicators until direct Census GCP integration is completed",
+    "Climate indicators until prepared BOM SA2 climate extracts are connected",
+    "Hazard indicators until Geoscience/state spatial layers are connected",
+    "Insurance premium estimates because public SA2-level insurer premium data is not available"
+  ],
+  "database_summary": {
+    "tables": [
+      "dim_region",
+      "fact_affordability",
+      "fact_climate",
+      "fact_demographics",
+      "fact_hazard",
+      "fact_property_risk",
+      "fact_seifa",
+      "foundation_region_climate",
+      "foundation_region_profile",
+      "foundation_region_risk",
+      "synthetic_insurance"
+    ],
+    "total_regions": 2353,
+    "avg_property_risk_score": 29.88,
+    "avg_premium_to_income_percent": 4.69,
+    "severe_affordability_regions": 71,
+    "high_or_severe_risk_regions": 18
+  },
+  "next_data_hardening_steps": [
+    "Connect direct ABS Census GCP SA2 ingestion",
+    "Connect BOM climate data ingestion",
+    "Connect Geoscience Australia and state hazard layers",
+    "Add commercial or partner insurance premium data if available"
+  ]
+}

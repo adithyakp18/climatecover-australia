@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import json
 
 import duckdb
 import pandas as pd
@@ -10,6 +11,7 @@ from src.config import DB_PATH
 
 
 REQUIRED_TABLE = "foundation_region_risk"
+MANIFEST_PATH = Path(__file__).resolve().parents[2] / "docs" / "data_refresh_manifest.json"
 
 
 def database_exists(db_path: Path = DB_PATH) -> bool:
@@ -24,16 +26,19 @@ def get_connection(db_path: str = str(DB_PATH)) -> duckdb.DuckDBPyConnection:
 def table_exists(table_name: str, db_path: Path = DB_PATH) -> bool:
     if not database_exists(db_path):
         return False
-    conn = get_connection(str(db_path))
-    result = conn.execute(
-        """
-        SELECT COUNT(*)
-        FROM information_schema.tables
-        WHERE table_name = ?
-        """,
-        [table_name],
-    ).fetchone()
-    return bool(result[0])
+    conn = duckdb.connect(str(db_path), read_only=True)
+    try:
+        result = conn.execute(
+            """
+            SELECT COUNT(*)
+            FROM information_schema.tables
+            WHERE table_name = ?
+            """,
+            [table_name],
+        ).fetchone()
+        return bool(result[0])
+    finally:
+        conn.close()
 
 
 def risk_table_available() -> bool:
@@ -68,6 +73,16 @@ def ensure_dashboard_data() -> tuple[bool, str]:
     if risk_table_available():
         return True, "Dashboard database was prepared successfully."
     return False, "Dashboard database build finished, but the required table was not found."
+
+
+@st.cache_data(show_spinner=False)
+def load_data_manifest() -> dict[str, object]:
+    if not MANIFEST_PATH.exists():
+        return {}
+    try:
+        return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
 
 
 @st.cache_data(show_spinner=False)

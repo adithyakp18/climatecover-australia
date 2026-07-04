@@ -10,7 +10,7 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.dashboard.formatting import configure_page, display_data_warning
-from src.dashboard.queries import ensure_dashboard_data
+from src.dashboard.queries import ensure_dashboard_data, load_data_manifest
 
 
 configure_page("Home")
@@ -83,6 +83,20 @@ with col3:
     )
 
 st.markdown("### Data Sources")
+manifest = load_data_manifest()
+last_refresh = manifest.get("last_refresh_utc", "Not available")
+region_count = manifest.get("database_summary", {}).get("total_regions", "Not available")
+st.markdown(
+    f"""
+    <div class="cc-card">
+    <h4>Data Status</h4>
+    <p class="cc-small"><strong>Current regional coverage:</strong> {region_count} SA2 regions</p>
+    <p class="cc-small"><strong>Last data refresh:</strong> {last_refresh}</p>
+    <p class="cc-small"><strong>Refresh schedule:</strong> Monthly via GitHub Actions, plus manual workflow dispatch.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 st.markdown(
     """
     - ABS ASGS SA2 region reference data
