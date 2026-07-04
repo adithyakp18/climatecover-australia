@@ -37,7 +37,7 @@ with st.spinner("Preparing regional risk database..."):
 
 if not data_ready:
     display_data_warning()
-    st.caption(data_message)
+    st.error(data_message)
 
 st.markdown("### Business Problem")
 st.markdown(

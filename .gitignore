@@ -13,6 +13,9 @@ db/*.duckdb.wal
 
 data/raw/*
 !data/raw/.gitkeep
+!data/raw/seifa_2021_sa2.xlsx
+!data/raw/asgs_sa2_regions.csv
+!data/raw/census_2021_sa2_demographics.csv
 data/processed/*
 !data/processed/.gitkeep
 data/reference/*
