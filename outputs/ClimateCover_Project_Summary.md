@@ -10,10 +10,10 @@ The application reads from a local DuckDB analytical database and presents resul
 
 - Application: Streamlit multi-page dashboard
 - Database: DuckDB
-- Primary analytical table: `foundation_region_risk`
+- Primary decision layer: Regional risk intelligence from DuckDB
 - Current regional coverage: 2,353 SA2 regions
-- Current app URL on this machine: `http://localhost:8505`
 - Deployment command: `streamlit run app/Home.py`
+- Latest data refresh: ABS SEIFA and ABS Census SA2 household fields loaded successfully
 
 ## Current Dashboard Metrics
 
@@ -21,24 +21,24 @@ The application reads from a local DuckDB analytical database and presents resul
 |---|---:|
 | Total SA2 regions | 2,353 |
 | Average property risk score | 29.88 |
-| Average premium-to-income percentage | 4.69% |
-| Severe affordability regions | 71 |
+| Average premium-to-income percentage | 4.26% |
+| Severe affordability regions | 21 |
 | High or severe property risk regions | 18 |
 
 ## Highest Priority Regions In Current Build
 
 | Region | State | Property Risk | Risk Band | Premium / Income | Affordability Band | Priority Score |
 |---|---|---:|---|---:|---|---:|
-| Victoria River | Northern Territory | 59.50 | High | 12.31% | Severe | 75.70 |
-| Driver | Northern Territory | 57.50 | High | 9.33% | Severe | 74.50 |
-| Riverview | Queensland | 56.17 | High | 11.74% | Severe | 73.70 |
-| Lakes Creek | Queensland | 55.17 | High | 10.07% | Severe | 73.10 |
-| Tiwi Islands | Northern Territory | 54.63 | High | 11.71% | Severe | 72.78 |
-| Southern Moreton Bay Islands | Queensland | 51.29 | High | 10.73% | Severe | 70.78 |
-| Deception Bay | Queensland | 51.29 | High | 8.97% | Severe | 70.78 |
-| Torres Strait Islands | Queensland | 51.29 | High | 11.53% | Severe | 70.78 |
-| Palm Island | Queensland | 51.29 | High | 11.56% | Severe | 70.78 |
-| Southport - North | Queensland | 50.29 | High | 11.07% | Severe | 70.18 |
+| Victoria River | Northern Territory | 59.50 | High | 9.82% | Severe | 75.70 |
+| Riverview | Queensland | 56.17 | High | 9.60% | Severe | 73.70 |
+| Tiwi Islands | Northern Territory | 54.63 | High | 13.24% | Severe | 72.78 |
+| Southern Moreton Bay Islands | Queensland | 51.29 | High | 13.06% | Severe | 70.78 |
+| Deception Bay | Queensland | 51.29 | High | 8.39% | Severe | 70.78 |
+| Torres Strait Islands | Queensland | 51.29 | High | 10.17% | Severe | 70.78 |
+| Palm Island | Queensland | 51.29 | High | 10.83% | Severe | 70.78 |
+| Lakes Creek | Queensland | 55.17 | High | 7.79% | High | 70.53 |
+| Southport - North | Queensland | 50.29 | High | 8.54% | Severe | 70.18 |
+| Pialba - Eli Waters | Queensland | 50.29 | High | 9.98% | Severe | 70.18 |
 
 ## What Was Built
 
@@ -94,6 +94,7 @@ Streamlit pages:
 - Australia Risk Explorer
 - Region Profile
 - Methodology
+- Data Quality
 
 Supporting modules:
 
@@ -108,11 +109,12 @@ Supporting modules:
 | Dataset | Source | Use |
 |---|---|---|
 | ABS SEIFA 2021 SA2 workbook | Australian Bureau of Statistics | SA2 codes, SA2 names, SEIFA scores, SEIFA deciles, usual resident population |
-| ABS Census DataPacks page | Australian Bureau of Statistics | Documented target source for full Census household fields |
+| ABS Census 2021 General Community Profile SA2 DataPack | Australian Bureau of Statistics | Median household income, mortgage repayment, rent and household count |
 
 Downloaded file:
 
 - `data/raw/seifa_2021_sa2.xlsx`
+- `data/raw/downloads/2021_GCP_SA2_for_AUS_short-header.zip`
 
 Generated raw extracts:
 
@@ -123,11 +125,22 @@ Generated raw extracts:
 
 These are the intended source categories for replacing current derived fields:
 
-- ABS Census 2021 SA2 General Community Profile
 - BOM climate observations or prepared SA2 climate indicators
 - Geoscience Australia hazard/exposure datasets
 - State open data flood, bushfire and planning layers
 - APRA, ICA and Actuaries Institute publications for insurance benchmark context
+
+## Current Data Lineage
+
+| Layer | Status |
+|---|---|
+| Regional reference | Real Public Data |
+| Socio-economic indicators | Real Public Data |
+| Household indicators | Real Public Data |
+| Insurance affordability | Calculated Metric |
+| Property risk | Calculated Metric |
+| Climate indicators | Modelled Indicator |
+| Hazard indicators | Modelled Indicator |
 
 ## Backend Data Model
 
@@ -163,7 +176,7 @@ foundation_region_risk
 
 1. ABS SEIFA data is downloaded and read from Excel.
 2. SA2 records are standardised into region and SEIFA tables.
-3. Household indicators are prepared at SA2 level.
+3. ABS Census SA2 household indicators are downloaded, extracted and prepared.
 4. Climate and hazard indicators are attached to each SA2.
 5. Insurance premium estimates are generated from hazard, state and rebuilding pressure assumptions.
 6. Affordability is calculated as annual premium divided by annual household income.
@@ -214,9 +227,9 @@ Affordability bands:
 
 The severe threshold approximates one month of annual household income.
 
-## Hardcoding And Estimates Used
+## Modelled And Calculated Logic Used
 
-The current build contains several deliberate assumptions so the product can run end-to-end before every government source is fully integrated.
+The current build now uses real ABS Census household fields. Climate and hazard indicators remain modelled until prepared BOM, Geoscience Australia and state hazard extracts are connected.
 
 ### State Base Premiums
 
@@ -251,9 +264,9 @@ loading = risk_score / 100 * maximum_loading
 
 Rebuild loading is calculated from income and mortgage repayment ranks. This is a replacement-cost pressure indicator until a more direct construction/rebuild-cost dataset is added.
 
-### Climate And Hazard Seed Values
+### Climate And Hazard Modelled Values
 
-The ABS-backed production seed uses state-level climate defaults and name-based hazard indicators. This gives every SA2 a complete operating record while final BOM/Geoscience/state hazard extracts are being connected.
+The ABS-backed build uses state-level climate defaults and name-based hazard indicators. This gives every SA2 a complete operating record while final BOM/Geoscience/state hazard extracts are being connected.
 
 Examples:
 
@@ -273,15 +286,17 @@ The app has been made deployment-ready in the following ways:
 - Data processing scripts are reusable and documented.
 - Key tables and metrics are validated during pipeline runs.
 - Product-facing language has been changed from project/prototype wording to operational platform wording.
+- ABS Census SA2 household fields now load as real public data.
+- A Data Quality page shows source coverage, refresh status and validation checks.
+- GitHub Actions can refresh public data and commit updated manifests/source catalog files.
 
 For a production-grade deployment, the next data-hardening steps are:
 
-1. Replace derived household indicators with full ABS Census GCP SA2 fields.
-2. Replace state climate defaults with prepared BOM SA2 climate features.
-3. Replace name-based hazard indicators with Geoscience Australia and state spatial hazard layers.
-4. Add source lineage columns to every feature table.
-5. Add automated tests for all scoring functions.
-6. Deploy through Streamlit Community Cloud, Render, Azure App Service, or similar.
+1. Replace state climate defaults with prepared BOM SA2 climate features.
+2. Replace name-based hazard indicators with Geoscience Australia and state spatial hazard layers.
+3. Add automated tests for all scoring functions.
+4. Connect insurer, claims or property-cost partner data if available.
+5. Deploy through Streamlit Community Cloud, Render, Azure App Service, or similar.
 
 ## Local Run Commands
 
@@ -304,10 +319,12 @@ The application combines ABS regional data, SEIFA socio-economic indicators, cli
 
 Current build:
 - 2,353 Australian SA2 regions
+- Real ABS Census household indicators
 - DuckDB analytical backend
 - Streamlit executive dashboard
 - Risk and affordability scoring
 - Regional explorer and SA2 profile views
+- Data quality and source lineage page
 - Reproducible Python data pipeline
 
 The platform is designed for use cases across insurance, banking, government resilience planning and climate risk analytics.
