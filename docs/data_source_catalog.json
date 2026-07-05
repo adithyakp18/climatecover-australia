@@ -1,0 +1,65 @@
+[
+  {
+    "layer": "Regional Reference",
+    "field_group": "SA2 code, SA2 name, state and population",
+    "source": "ABS SEIFA 2021 SA2 workbook",
+    "source_url": "https://www.abs.gov.au/statistics/people/people-and-communities/socio-economic-indexes-areas-seifa-australia/latest-release",
+    "data_status": "Real Public Data",
+    "refresh_method": "Automated ABS workbook download when source is available",
+    "business_use": "Regional coverage and joins"
+  },
+  {
+    "layer": "Socio-economic Indicators",
+    "field_group": "IRSD and IER scores and deciles",
+    "source": "ABS SEIFA 2021 SA2 workbook",
+    "source_url": "https://www.abs.gov.au/statistics/people/people-and-communities/socio-economic-indexes-areas-seifa-australia/latest-release",
+    "data_status": "Real Public Data",
+    "refresh_method": "Automated ABS workbook download when source is available",
+    "business_use": "Community vulnerability and affordability context"
+  },
+  {
+    "layer": "Household Indicators",
+    "field_group": "Income, rent, mortgage and household count",
+    "source": "ABS Census 2021 General Community Profile SA2 DataPack",
+    "source_url": "https://www.abs.gov.au/census/find-census-data/datapacks",
+    "data_status": "Real Public Data",
+    "refresh_method": "Automated ABS DataPack download with governed fallback",
+    "business_use": "Insurance affordability denominator and household scale"
+  },
+  {
+    "layer": "Climate Indicators",
+    "field_group": "Rainfall, temperature, heat days and rainfall anomaly",
+    "source": "BOM-style prepared indicators",
+    "source_url": "https://www.bom.gov.au/climate/data/",
+    "data_status": "Modelled Indicator",
+    "refresh_method": "Ready for scheduled prepared-source ingestion",
+    "business_use": "Climate pressure signal"
+  },
+  {
+    "layer": "Hazard Indicators",
+    "field_group": "Flood, bushfire, cyclone and storm scores",
+    "source": "Geoscience Australia, data.gov.au and state open-data hazard layers",
+    "source_url": "https://portal.ga.gov.au/",
+    "data_status": "Modelled Indicator",
+    "refresh_method": "Ready for scheduled prepared-source ingestion",
+    "business_use": "Physical property risk exposure"
+  },
+  {
+    "layer": "Insurance Affordability",
+    "field_group": "Estimated annual premium and premium-to-income ratio",
+    "source": "Explainable affordability model",
+    "source_url": "docs/methodology.md",
+    "data_status": "Calculated Metric",
+    "refresh_method": "Recalculated whenever input data is rebuilt",
+    "business_use": "Affordability stress screening"
+  },
+  {
+    "layer": "Property Risk",
+    "field_group": "Property risk score, risk band and intervention priority",
+    "source": "Explainable weighted scoring model",
+    "source_url": "docs/methodology.md",
+    "data_status": "Calculated Metric",
+    "refresh_method": "Recalculated whenever input data is rebuilt",
+    "business_use": "Prioritisation and executive decision support"
+  }
+]

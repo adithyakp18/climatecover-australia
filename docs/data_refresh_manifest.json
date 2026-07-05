@@ -1,8 +1,8 @@
 {
-  "last_refresh_utc": "2026-07-04T15:38:11.576429+00:00",
+  "last_refresh_utc": "2026-07-05T00:07:26.280198+00:00",
   "refresh_mode": "automated_public_data_refresh",
   "status": "success",
-  "primary_table": "foundation_region_risk",
+  "decision_layer": "Regional risk intelligence",
   "real_public_sources": [
     {
       "name": "ABS SEIFA 2021 SA2 workbook",
@@ -16,36 +16,116 @@
         "IER score and decile"
       ],
       "update_pattern": "ABS release cycle"
+    },
+    {
+      "name": "ABS Census 2021 General Community Profile SA2 DataPack",
+      "provider": "Australian Bureau of Statistics",
+      "coverage": "National SA2 when public DataPack download is available",
+      "fields_used": [
+        "Median weekly household income",
+        "Median monthly mortgage repayment",
+        "Median weekly rent",
+        "Household count"
+      ],
+      "update_pattern": "ABS Census release cycle"
     }
   ],
-  "derived_or_modelled_layers": [
-    "Household income/rent/mortgage indicators until direct Census GCP integration is completed",
+  "modelled_or_calculated_layers": [
+    "Household indicators only when ABS Census SA2 DataPack is not available during refresh",
     "Climate indicators until prepared BOM SA2 climate extracts are connected",
     "Hazard indicators until Geoscience/state spatial layers are connected",
-    "Insurance premium estimates because public SA2-level insurer premium data is not available"
+    "Insurance affordability estimates because public SA2-level insurer premium data is not available"
   ],
   "database_summary": {
-    "tables": [
-      "dim_region",
-      "fact_affordability",
-      "fact_climate",
-      "fact_demographics",
-      "fact_hazard",
-      "fact_property_risk",
-      "fact_seifa",
-      "foundation_region_climate",
-      "foundation_region_profile",
-      "foundation_region_risk",
-      "synthetic_insurance"
+    "analytics_layers": [
+      "Regional reference",
+      "Socio-economic indicators",
+      "Household affordability indicators",
+      "Climate and hazard indicators",
+      "Insurance affordability estimates",
+      "Property risk and intervention priority"
     ],
     "total_regions": 2353,
     "avg_property_risk_score": 29.88,
-    "avg_premium_to_income_percent": 4.69,
-    "severe_affordability_regions": 71,
-    "high_or_severe_risk_regions": 18
+    "avg_premium_to_income_percent": 4.26,
+    "severe_affordability_regions": 21,
+    "high_or_severe_risk_regions": 18,
+    "lineage_status_counts": {
+      "Real Public Data": 3,
+      "Calculated Metric": 2,
+      "Modelled Indicator": 2
+    },
+    "household_source_counts": {
+      "Real Public Data": 2353
+    }
   },
+  "source_catalog": [
+    {
+      "layer": "Regional Reference",
+      "field_group": "SA2 code, SA2 name, state and population",
+      "source": "ABS SEIFA 2021 SA2 workbook",
+      "source_url": "https://www.abs.gov.au/statistics/people/people-and-communities/socio-economic-indexes-areas-seifa-australia/latest-release",
+      "data_status": "Real Public Data",
+      "refresh_method": "Automated ABS workbook download when source is available",
+      "business_use": "Regional coverage and joins"
+    },
+    {
+      "layer": "Socio-economic Indicators",
+      "field_group": "IRSD and IER scores and deciles",
+      "source": "ABS SEIFA 2021 SA2 workbook",
+      "source_url": "https://www.abs.gov.au/statistics/people/people-and-communities/socio-economic-indexes-areas-seifa-australia/latest-release",
+      "data_status": "Real Public Data",
+      "refresh_method": "Automated ABS workbook download when source is available",
+      "business_use": "Community vulnerability and affordability context"
+    },
+    {
+      "layer": "Household Indicators",
+      "field_group": "Income, rent, mortgage and household count",
+      "source": "ABS Census 2021 General Community Profile SA2 DataPack",
+      "source_url": "https://www.abs.gov.au/census/find-census-data/datapacks",
+      "data_status": "Real Public Data",
+      "refresh_method": "Automated ABS DataPack download with governed fallback",
+      "business_use": "Insurance affordability denominator and household scale"
+    },
+    {
+      "layer": "Climate Indicators",
+      "field_group": "Rainfall, temperature, heat days and rainfall anomaly",
+      "source": "BOM-style prepared indicators",
+      "source_url": "https://www.bom.gov.au/climate/data/",
+      "data_status": "Modelled Indicator",
+      "refresh_method": "Ready for scheduled prepared-source ingestion",
+      "business_use": "Climate pressure signal"
+    },
+    {
+      "layer": "Hazard Indicators",
+      "field_group": "Flood, bushfire, cyclone and storm scores",
+      "source": "Geoscience Australia, data.gov.au and state open-data hazard layers",
+      "source_url": "https://portal.ga.gov.au/",
+      "data_status": "Modelled Indicator",
+      "refresh_method": "Ready for scheduled prepared-source ingestion",
+      "business_use": "Physical property risk exposure"
+    },
+    {
+      "layer": "Insurance Affordability",
+      "field_group": "Estimated annual premium and premium-to-income ratio",
+      "source": "Explainable affordability model",
+      "source_url": "docs/methodology.md",
+      "data_status": "Calculated Metric",
+      "refresh_method": "Recalculated whenever input data is rebuilt",
+      "business_use": "Affordability stress screening"
+    },
+    {
+      "layer": "Property Risk",
+      "field_group": "Property risk score, risk band and intervention priority",
+      "source": "Explainable weighted scoring model",
+      "source_url": "docs/methodology.md",
+      "data_status": "Calculated Metric",
+      "refresh_method": "Recalculated whenever input data is rebuilt",
+      "business_use": "Prioritisation and executive decision support"
+    }
+  ],
   "next_data_hardening_steps": [
-    "Connect direct ABS Census GCP SA2 ingestion",
+    "Monitor ABS Census DataPack endpoint and refresh household indicators on source updates",
     "Connect BOM climate data ingestion",
     "Connect Geoscience Australia and state hazard layers",
     "Add commercial or partner insurance premium data if available"

@@ -24,11 +24,33 @@ logging.basicConfig(
 logger = logging.getLogger("refresh_public_data")
 
 MANIFEST_PATH = PROJECT_ROOT / "docs" / "data_refresh_manifest.json"
+SOURCE_CATALOG_PATH = PROJECT_ROOT / "docs" / "data_source_catalog.json"
+
+
+def source_catalog() -> list[dict[str, object]]:
+    if not SOURCE_CATALOG_PATH.exists():
+        return []
+    return json.loads(SOURCE_CATALOG_PATH.read_text(encoding="utf-8"))
 
 
 def database_summary() -> dict[str, object]:
     conn = duckdb.connect(str(DB_PATH), read_only=True)
     try:
+        lineage_rows = conn.execute(
+            """
+            SELECT data_status, COUNT(*) AS layer_count
+            FROM data_lineage
+            GROUP BY data_status
+            """
+        ).fetchall()
+        household_sources = conn.execute(
+            """
+            SELECT source_type, COUNT(*) AS records
+            FROM fact_demographics
+            GROUP BY source_type
+            ORDER BY records DESC
+            """
+        ).fetchall()
         risk_summary = conn.execute(
             """
             SELECT
@@ -59,6 +81,12 @@ def database_summary() -> dict[str, object]:
         "avg_premium_to_income_percent": float(risk_summary[2] or 0),
         "severe_affordability_regions": int(risk_summary[3] or 0),
         "high_or_severe_risk_regions": int(risk_summary[4] or 0),
+        "lineage_status_counts": {
+            str(status or "Unknown"): int(count or 0) for status, count in lineage_rows
+        },
+        "household_source_counts": {
+            str(source_type or "Unknown"): int(count or 0) for source_type, count in household_sources
+        },
     }
 
 
@@ -68,7 +96,7 @@ def write_manifest() -> dict[str, object]:
         "last_refresh_utc": datetime.now(timezone.utc).isoformat(),
         "refresh_mode": "automated_public_data_refresh",
         "status": "success",
-        "primary_table": "foundation_region_risk",
+        "decision_layer": "Regional risk intelligence",
         "real_public_sources": [
             {
                 "name": "ABS SEIFA 2021 SA2 workbook",
@@ -82,17 +110,30 @@ def write_manifest() -> dict[str, object]:
                     "IER score and decile",
                 ],
                 "update_pattern": "ABS release cycle",
+            },
+            {
+                "name": "ABS Census 2021 General Community Profile SA2 DataPack",
+                "provider": "Australian Bureau of Statistics",
+                "coverage": "National SA2 when public DataPack download is available",
+                "fields_used": [
+                    "Median weekly household income",
+                    "Median monthly mortgage repayment",
+                    "Median weekly rent",
+                    "Household count",
+                ],
+                "update_pattern": "ABS Census release cycle",
             }
         ],
-        "derived_or_modelled_layers": [
-            "Household income/rent/mortgage indicators until direct Census GCP integration is completed",
+        "modelled_or_calculated_layers": [
+            "Household indicators only when ABS Census SA2 DataPack is not available during refresh",
             "Climate indicators until prepared BOM SA2 climate extracts are connected",
             "Hazard indicators until Geoscience/state spatial layers are connected",
-            "Insurance premium estimates because public SA2-level insurer premium data is not available",
+            "Insurance affordability estimates because public SA2-level insurer premium data is not available",
         ],
         "database_summary": summary,
+        "source_catalog": source_catalog(),
         "next_data_hardening_steps": [
-            "Connect direct ABS Census GCP SA2 ingestion",
+            "Monitor ABS Census DataPack endpoint and refresh household indicators on source updates",
             "Connect BOM climate data ingestion",
             "Connect Geoscience Australia and state hazard layers",
             "Add commercial or partner insurance premium data if available",

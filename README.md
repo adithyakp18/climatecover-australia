@@ -20,7 +20,8 @@ The deployed dataset is built from an ABS-backed national regional foundation:
 - Official ABS SEIFA 2021 SA2 records
 - Real SA2 codes, names, states and regional population
 - Real ABS IRSD and IER scores and deciles
-- Modelled household, climate, hazard and insurance affordability indicators used to create a national decision-support layer
+- ABS Census 2021 SA2 household indicators when the public DataPack download is available
+- Modelled climate, hazard and insurance affordability indicators used to create a national decision-support layer until prepared public extracts are connected
 
 The insurance affordability layer is an explainable estimate for regional screening. It is not an insurer quote, actuarial price or financial advice.
 
@@ -51,6 +52,14 @@ Monthly, on the first day of the month
 ```
 
 The workflow refreshes public source files, rebuilds the analytics database for validation, writes `docs/data_refresh_manifest.json`, and commits refreshed source/manifest files back to GitHub when changes exist.
+
+The app also includes a Data Quality page that shows:
+
+- real public data fields
+- modelled indicators
+- calculated metrics
+- refresh status
+- validation checks
 
 ## Data Status
 
@@ -117,6 +126,7 @@ Pages:
 - Australia Risk Explorer
 - Region Profile
 - Methodology
+- Data Quality
 
 ## Dashboard Screenshots
 

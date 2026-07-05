@@ -111,6 +111,21 @@ with st.expander("Data Preparation Workflow"):
         """
     )
 
+with st.expander("Source Status and Data Quality"):
+    st.markdown(
+        """
+        ClimateCover separates every major field group into one of three categories:
+
+        - **Real Public Data** loaded from an Australian public dataset.
+        - **Modelled Indicator** generated from documented logic until a prepared public extract is connected.
+        - **Calculated Metric** derived from the governed analytical model.
+
+        The Data Quality page shows source coverage, refresh status and validation checks
+        so users can see which parts of the decision layer are source data and which parts
+        are calculated analytics.
+        """
+    )
+
 with st.expander("Model Governance"):
     st.markdown(
         """

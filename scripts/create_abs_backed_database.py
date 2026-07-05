@@ -122,7 +122,53 @@ def make_seifa(seifa_raw: pd.DataFrame) -> pd.DataFrame:
     return seifa
 
 
-def make_demographics_proxy(seifa_raw: pd.DataFrame) -> pd.DataFrame:
+def make_demographics(seifa_raw: pd.DataFrame) -> pd.DataFrame:
+    prepared_path = RAW_DATA_DIR / "census_2021_sa2_demographics.csv"
+    required_columns = [
+        "sa2_code",
+        "median_weekly_household_income",
+        "median_monthly_mortgage_repayment",
+        "median_weekly_rent",
+        "household_count",
+    ]
+    if prepared_path.exists():
+        prepared = pd.read_csv(prepared_path, dtype={"sa2_code": str})
+        missing = [column for column in required_columns if column not in prepared.columns]
+        if missing:
+            logger.warning(
+                "Prepared Census file is missing columns %s. Falling back to SEIFA-derived estimates.",
+                ", ".join(missing),
+            )
+        else:
+            prepared["sa2_code"] = prepared["sa2_code"].astype(str).str.extract(r"(\d{9})", expand=False)
+            for column in required_columns[1:]:
+                prepared[column] = pd.to_numeric(prepared[column], errors="coerce")
+            prepared = prepared.dropna(subset=["sa2_code"])
+            output = seifa_raw[["sa2_code"]].merge(prepared, on="sa2_code", how="left")
+            if "source_file" not in output.columns:
+                output["source_file"] = "ABS Census 2021 General Community Profile SA2 DataPack"
+            if "source_type" not in output.columns:
+                output["source_type"] = "Real Public Data"
+            output["source_file"] = output["source_file"].fillna(
+                "ABS Census 2021 General Community Profile SA2 DataPack"
+            )
+            output["source_type"] = output["source_type"].fillna("Real Public Data")
+            missing_income_rate = output["median_weekly_household_income"].isna().mean()
+            if missing_income_rate < 0.25:
+                logger.info("Using prepared Census demographics extract: %s", prepared_path)
+                return output[
+                    [
+                        *required_columns,
+                        "source_file",
+                        "source_type",
+                    ]
+                ]
+            logger.warning(
+                "Prepared Census extract has %.1f%% missing income values after SA2 join. "
+                "Falling back to SEIFA-derived estimates.",
+                missing_income_rate * 100,
+            )
+
     income_percentile = seifa_raw["ier_score"].rank(pct=True).fillna(0.5)
     population = seifa_raw["usual_resident_population"].fillna(0)
     demographics = pd.DataFrame()
@@ -131,7 +177,8 @@ def make_demographics_proxy(seifa_raw: pd.DataFrame) -> pd.DataFrame:
     demographics["median_monthly_mortgage_repayment"] = (1150 + income_percentile * 1850).round(0)
     demographics["median_weekly_rent"] = (260 + income_percentile * 430).round(0)
     demographics["household_count"] = (population / 2.55).round(0)
-    demographics["source_file"] = "ABS SEIFA 2021 population plus SEIFA-derived affordability proxy"
+    demographics["source_file"] = "ABS SEIFA 2021 population plus SEIFA-derived household estimates"
+    demographics["source_type"] = "Modelled Indicator"
     return demographics
 
 
@@ -146,8 +193,9 @@ def make_climate_proxy(seifa_raw: pd.DataFrame) -> pd.DataFrame:
                 temperature,
                 heat_days,
                 anomaly,
-                "BOM-informed state climate proxy pending SA2 climate extract",
-                "ABS-backed proxy",
+                "BOM-informed state climate estimates pending SA2 climate extract",
+                "ABS-backed climate estimate",
+                "Modelled Indicator",
             ]
         )
     return pd.DataFrame(
@@ -160,6 +208,7 @@ def make_climate_proxy(seifa_raw: pd.DataFrame) -> pd.DataFrame:
             "rainfall_anomaly",
             "source",
             "source_file",
+            "source_type",
         ],
     )
 
@@ -195,9 +244,90 @@ def make_hazard_proxy(seifa_raw: pd.DataFrame) -> pd.DataFrame:
             "overall_hazard_score",
         ],
     )
-    hazard["source"] = "GA/state hazard-informed proxy pending SA2 hazard extract"
-    hazard["source_file"] = "ABS-backed proxy"
+    hazard["source"] = "GA/state hazard-informed estimates pending SA2 hazard extract"
+    hazard["source_file"] = "ABS-backed hazard estimate"
+    hazard["source_type"] = "Modelled Indicator"
     return hazard
+
+
+def make_data_lineage(demographics: pd.DataFrame) -> pd.DataFrame:
+    household_status = (
+        "Real Public Data"
+        if "source_type" in demographics.columns
+        and demographics["source_type"].eq("Real Public Data").any()
+        else "Modelled Indicator"
+    )
+    household_source = (
+        "ABS Census 2021 General Community Profile SA2 DataPack"
+        if household_status == "Real Public Data"
+        else "ABS SEIFA 2021 population plus SEIFA-derived household indicators"
+    )
+    rows = [
+        {
+            "layer": "Regional Reference",
+            "field_group": "SA2 code, SA2 name, state, population",
+            "source": "ABS SEIFA 2021 SA2 workbook",
+            "source_url": "https://www.abs.gov.au/statistics/people/people-and-communities/socio-economic-indexes-areas-seifa-australia/latest-release",
+            "data_status": "Real Public Data",
+            "refresh_method": "Automated ABS workbook download when source is available",
+            "business_use": "Regional coverage and joins",
+        },
+        {
+            "layer": "Socio-economic Indicators",
+            "field_group": "IRSD and IER scores and deciles",
+            "source": "ABS SEIFA 2021 SA2 workbook",
+            "source_url": "https://www.abs.gov.au/statistics/people/people-and-communities/socio-economic-indexes-areas-seifa-australia/latest-release",
+            "data_status": "Real Public Data",
+            "refresh_method": "Automated ABS workbook download when source is available",
+            "business_use": "Community vulnerability and affordability context",
+        },
+        {
+            "layer": "Household Indicators",
+            "field_group": "Income, rent, mortgage, household count",
+            "source": household_source,
+            "source_url": "https://www.abs.gov.au/census/find-census-data/datapacks",
+            "data_status": household_status,
+            "refresh_method": "Automated ABS DataPack download with governed fallback",
+            "business_use": "Insurance affordability denominator and household scale",
+        },
+        {
+            "layer": "Climate Indicators",
+            "field_group": "Rainfall, temperature, heat days, rainfall anomaly",
+            "source": "BOM-style prepared indicators",
+            "source_url": "https://www.bom.gov.au/climate/data/",
+            "data_status": "Modelled Indicator",
+            "refresh_method": "Ready for scheduled prepared-source ingestion",
+            "business_use": "Climate pressure signal",
+        },
+        {
+            "layer": "Hazard Indicators",
+            "field_group": "Flood, bushfire, cyclone, storm scores",
+            "source": "Geoscience Australia, data.gov.au and state open-data hazard layers",
+            "source_url": "https://portal.ga.gov.au/",
+            "data_status": "Modelled Indicator",
+            "refresh_method": "Ready for scheduled prepared-source ingestion",
+            "business_use": "Physical property risk exposure",
+        },
+        {
+            "layer": "Insurance Affordability",
+            "field_group": "Estimated annual premium and premium-to-income ratio",
+            "source": "Explainable affordability model",
+            "source_url": "docs/methodology.md",
+            "data_status": "Calculated Metric",
+            "refresh_method": "Recalculated whenever input data is rebuilt",
+            "business_use": "Affordability stress screening",
+        },
+        {
+            "layer": "Property Risk",
+            "field_group": "Property risk score, risk band, intervention priority",
+            "source": "Explainable weighted scoring model",
+            "source_url": "docs/methodology.md",
+            "data_status": "Calculated Metric",
+            "refresh_method": "Recalculated whenever input data is rebuilt",
+            "business_use": "Prioritisation and executive decision support",
+        },
+    ]
+    return pd.DataFrame(rows)
 
 
 def main() -> int:
@@ -207,9 +337,10 @@ def main() -> int:
 
     region = make_region(seifa_raw)
     seifa = make_seifa(seifa_raw)
-    demographics = make_demographics_proxy(seifa_raw)
+    demographics = make_demographics(seifa_raw)
     climate = make_climate_proxy(seifa_raw)
     hazard = make_hazard_proxy(seifa_raw)
+    data_lineage = make_data_lineage(demographics)
 
     foundation_region_profile = (
         region[["sa2_code", "sa2_name", "state_name"]]
@@ -263,6 +394,7 @@ def main() -> int:
         write_df(conn, foundation_region_profile, "foundation_region_profile")
         write_df(conn, climate, "fact_climate")
         write_df(conn, hazard, "fact_hazard")
+        write_df(conn, data_lineage, "data_lineage")
         write_df(conn, foundation_region_climate, "foundation_region_climate")
     finally:
         conn.close()

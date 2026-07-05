@@ -34,4 +34,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Refresh public data"
-          file_pattern: "data/raw/*.csv data/raw/*.xlsx docs/data_refresh_manifest.json"
+          file_pattern: "data/raw/*.csv data/raw/*.xlsx docs/data_refresh_manifest.json docs/data_source_catalog.json"

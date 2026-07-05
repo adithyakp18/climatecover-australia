@@ -101,7 +101,7 @@ st.markdown(
     """
     - ABS ASGS SA2 region reference data
     - ABS SEIFA 2021
-    - ABS Census 2021 household indicators
+    - ABS Census 2021 household indicators when the public SA2 DataPack is available
     - Prepared BOM climate indicators
     - Prepared Geoscience Australia, data.gov.au or state open-data hazard indicators
     - Modelled insurance affordability indicators generated from documented scoring logic
@@ -118,7 +118,7 @@ st.markdown(
 )
 
 st.markdown("### Navigate")
-nav1, nav2, nav3, nav4 = st.columns(4)
+nav1, nav2, nav3, nav4, nav5 = st.columns(5)
 with nav1:
     st.page_link("pages/1_Executive_Overview.py", label="Executive Overview")
 with nav2:
@@ -127,3 +127,5 @@ with nav3:
     st.page_link("pages/3_Region_Profile.py", label="Region Profile")
 with nav4:
     st.page_link("pages/4_Methodology.py", label="Methodology")
+with nav5:
+    st.page_link("pages/5_Data_Quality.py", label="Data Quality")

@@ -74,6 +74,8 @@ Purpose: Build `fact_demographics`.
 Useful URL:
 
 - https://www.abs.gov.au/census/find-census-data/datapacks
+- Direct SA2 General Community Profile DataPack endpoint used by the automated refresh:
+  https://www.abs.gov.au/census/find-census-data/datapacks/download/2021_GCP_SA2_for_AUS_short-header.zip
 
 Download one of:
 
@@ -97,6 +99,8 @@ Required fields:
 - Household count
 
 If using the full Census DataPack, create a small extract first with these fields. Sprint 1 deliberately avoids guessing across hundreds of Census columns because silent mis-mapping would damage trust in the project.
+
+The automated ABS-backed refresh first attempts to download the official SA2 General Community Profile DataPack and extract the required household fields. If the public ABS page or DataPack structure changes, the pipeline falls back to a clearly tagged modelled household indicator layer so the deployed dashboard remains available.
 
 ## Source Transparency
 

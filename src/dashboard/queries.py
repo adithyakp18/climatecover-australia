@@ -12,6 +12,7 @@ from src.config import DB_PATH
 
 REQUIRED_TABLE = "foundation_region_risk"
 MANIFEST_PATH = Path(__file__).resolve().parents[2] / "docs" / "data_refresh_manifest.json"
+SOURCE_CATALOG_PATH = Path(__file__).resolve().parents[2] / "docs" / "data_source_catalog.json"
 
 
 def database_exists(db_path: Path = DB_PATH) -> bool:
@@ -66,6 +67,8 @@ def ensure_dashboard_data() -> tuple[bool, str]:
         load_band_distribution,
         load_top_regions,
         load_region_names,
+        load_data_lineage,
+        load_data_quality_checks,
     ]:
         if hasattr(cached_function, "clear"):
             cached_function.clear()
@@ -83,6 +86,180 @@ def load_data_manifest() -> dict[str, object]:
         return json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError:
         return {}
+
+
+@st.cache_data(show_spinner=False)
+def load_source_catalog() -> pd.DataFrame:
+    if not SOURCE_CATALOG_PATH.exists():
+        return pd.DataFrame(
+            columns=[
+                "layer",
+                "field_group",
+                "source",
+                "source_url",
+                "data_status",
+                "refresh_method",
+                "business_use",
+            ]
+        )
+    try:
+        return pd.DataFrame(json.loads(SOURCE_CATALOG_PATH.read_text(encoding="utf-8")))
+    except json.JSONDecodeError:
+        return pd.DataFrame()
+
+
+@st.cache_data(show_spinner=False)
+def load_data_lineage() -> pd.DataFrame:
+    if table_exists("data_lineage"):
+        conn = get_connection()
+        return conn.execute(
+            """
+            SELECT
+                layer,
+                field_group,
+                source,
+                source_url,
+                data_status,
+                refresh_method,
+                business_use
+            FROM data_lineage
+            ORDER BY
+                CASE data_status
+                    WHEN 'Real Public Data' THEN 1
+                    WHEN 'Calculated Metric' THEN 2
+                    ELSE 3
+                END,
+                layer
+            """
+        ).fetchdf()
+    return load_source_catalog()
+
+
+@st.cache_data(show_spinner=False)
+def load_data_quality_checks() -> pd.DataFrame:
+    conn = get_connection()
+    rows = []
+
+    def add_check(check_name: str, result: str, value: object, detail: str) -> None:
+        rows.append(
+            {
+                "Check": check_name,
+                "Result": result,
+                "Value": value,
+                "Detail": detail,
+            }
+        )
+
+    total_regions = conn.execute("SELECT COUNT(*) FROM foundation_region_risk").fetchone()[0]
+    duplicate_regions = conn.execute(
+        """
+        SELECT COUNT(*)
+        FROM (
+            SELECT sa2_code
+            FROM foundation_region_risk
+            GROUP BY sa2_code
+            HAVING COUNT(*) > 1
+        )
+        """
+    ).fetchone()[0]
+    add_check(
+        "Regional coverage",
+        "Pass" if total_regions > 0 else "Fail",
+        f"{total_regions:,}",
+        "Number of regional records available to the dashboard.",
+    )
+    add_check(
+        "Duplicate region keys",
+        "Pass" if duplicate_regions == 0 else "Review",
+        f"{duplicate_regions:,}",
+        "SA2 code should be unique in the regional risk layer.",
+    )
+
+    lineage_available = table_exists("data_lineage")
+    add_check(
+        "Source lineage available",
+        "Pass" if lineage_available else "Review",
+        "Available" if lineage_available else "Catalog fallback",
+        "Shows which field groups are real public data, modelled indicators or calculated metrics.",
+    )
+
+    if table_exists("fact_demographics"):
+        demographic_sources = conn.execute(
+            """
+            SELECT
+                source_type,
+                COUNT(*) AS records
+            FROM fact_demographics
+            GROUP BY source_type
+            ORDER BY records DESC
+            """
+        ).fetchall()
+        source_summary = ", ".join(
+            f"{source_type or 'Unknown'}: {records:,}" for source_type, records in demographic_sources
+        )
+        real_household_records = sum(
+            records for source_type, records in demographic_sources if source_type == "Real Public Data"
+        )
+        add_check(
+            "Household indicator source",
+            "Pass" if real_household_records > 0 else "Review",
+            source_summary or "Unavailable",
+            "Confirms whether household affordability fields are loaded from ABS Census or modelled fallback indicators.",
+        )
+
+    for column, label in [
+        ("irsd_score", "SEIFA IRSD score completeness"),
+        ("median_weekly_household_income", "Household income completeness"),
+        ("property_risk_score", "Property risk score completeness"),
+        ("estimated_annual_premium", "Insurance affordability estimate completeness"),
+    ]:
+        null_rate = conn.execute(
+            f"""
+            SELECT
+                100.0 * SUM(CASE WHEN {column} IS NULL THEN 1 ELSE 0 END) / COUNT(*)
+            FROM foundation_region_risk
+            """
+        ).fetchone()[0]
+        add_check(
+            label,
+            "Pass" if null_rate < 5 else "Review",
+            f"{null_rate:.2f}%",
+            f"Null percentage for {label.lower()}.",
+        )
+
+    min_risk, max_risk = conn.execute(
+        """
+        SELECT MIN(property_risk_score), MAX(property_risk_score)
+        FROM foundation_region_risk
+        """
+    ).fetchone()
+    risk_range_ok = (min_risk is not None and max_risk is not None and 0 <= min_risk <= max_risk <= 100)
+    add_check(
+        "Risk score range",
+        "Pass" if risk_range_ok else "Review",
+        f"{min_risk:.1f} to {max_risk:.1f}" if min_risk is not None else "n/a",
+        "Property risk scores should sit between 0 and 100.",
+    )
+
+    min_premium, max_premium = conn.execute(
+        """
+        SELECT MIN(estimated_annual_premium), MAX(estimated_annual_premium)
+        FROM foundation_region_risk
+        """
+    ).fetchone()
+    premium_range_ok = (
+        min_premium is not None
+        and max_premium is not None
+        and 500 <= min_premium <= max_premium <= 20000
+    )
+    add_check(
+        "Premium estimate range",
+        "Pass" if premium_range_ok else "Review",
+        f"${min_premium:,.0f} to ${max_premium:,.0f}" if min_premium is not None else "n/a",
+        "Estimated annual premium should remain within the governed screening range.",
+    )
+
+    return pd.DataFrame(rows)
 
 
 @st.cache_data(show_spinner=False)
