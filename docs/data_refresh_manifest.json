@@ -1,5 +1,5 @@
 {
-  "last_refresh_utc": "2026-07-05T00:07:26.280198+00:00",
+  "last_refresh_utc": "2026-08-01T18:56:08.297976+00:00",
   "refresh_mode": "automated_public_data_refresh",
   "status": "success",
   "decision_layer": "Regional risk intelligence",
@@ -51,9 +51,9 @@
     "severe_affordability_regions": 21,
     "high_or_severe_risk_regions": 18,
     "lineage_status_counts": {
+      "Modelled Indicator": 2,
       "Real Public Data": 3,
-      "Calculated Metric": 2,
-      "Modelled Indicator": 2
+      "Calculated Metric": 2
     },
     "household_source_counts": {
       "Real Public Data": 2353
